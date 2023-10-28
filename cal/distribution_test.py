@@ -1,5 +1,5 @@
 import unittest
-from distribution import MixtureDistribution, SingleNormalDistribution
+from distribution import *
 import matplotlib.pyplot as plt
 
 class TestSingleNormalDistribution(unittest.TestCase):
@@ -23,14 +23,18 @@ class TestSingleNormalDistribution(unittest.TestCase):
 
 if __name__ == '__main__':
     # unittest.main()
+
     distribution1 = SingleNormalDistribution(15, 4, 10)
     distribution2 = SingleNormalDistribution(5, 7, 100)
     Mix1 = MixtureDistribution([distribution1, distribution2])
     distribution3 = SingleNormalDistribution(32, 4, 200)
     Mix2 = MixtureDistribution([Mix1, distribution3])
     print(Mix2.sample(9))
+
+    # 绘制直方图进行验证卡方分布
+    distribution_chi = ChiSquareDistribution(4, 10)
     
     # 绘制直方图进行验证
-    plt.hist(Mix2.sample(10000), bins=100)
+    plt.hist(distribution_chi.sample(10000), bins=100)
     plt.show()
    
