@@ -5,12 +5,13 @@ class UnexpectedBindingType(Exception):
 
 class BaseBinding:
     def __init__(self):
-        self.bindname = 'BaseBinding'
+        self.bindname = 'bindname' # BaseBinding
         self.bindings = {}
 
-    def reverse_bind(self, key: Optional[str] = None, obj: Optional['BaseBinding'] = None):
+    def reverse_bind(self, key: str, obj: Optional['BaseBinding'] = None):
         """
-        用于被bind调用, 实现反向绑定
+        用于被bind调用, 实现反向绑定（单独使用时会导致仅单向绑定）
+        必须指定key, 通常可以使用bindname作为key
         """
         if key not in self.bindings or self.bindings[key] is None or isinstance(self.bindings[key], BaseBinding):
             self.bindings[key] = obj
@@ -48,15 +49,20 @@ class BaseBinding:
             else:
                 self.bindings[key] = None
         if self.bindings[key] is None or hasattr(self.bindings[key], "bindname"):
-            # 绑定新增或替换，当替换时，需要先解除绑定原来的对象
+            # 绑定新增或替换，当原有为绑定对象时，需要替换（list不需要替换）。当替换时，需要先解除绑定原来的对象。
             if hasattr(self.bindings[key], "bindname"):
                 self.unbind(key)
             self.bindings[key] = obj
             if hasattr(obj, "bindname"):
                 obj.reverse_bind(self_key, self)
+            elif isinstance(obj, list):
+                for o in obj:
+                    o.reverse_bind(self_key, self)
+                self.bindings[key] = obj
             else:
                 raise UnexpectedBindingType(f'bind error: Unexpected Binding Type {type(obj)}')
         elif isinstance(self.bindings[key], list):
+            # 但原有为列表时，不需要解除绑定，而是直接添加到列表中
             if isinstance(obj, list):
                 self.bindings[key].extend(obj)
                 for o in obj:
@@ -69,12 +75,13 @@ class BaseBinding:
         else:
             raise UnexpectedBindingType(f'bind error: Unexpected Binding Type {type(self.bindings[key])}')
         
-    def reverse_unbind(self, key: Optional[str] = None, obj: Optional['BaseBinding'] = None):
+    def reverse_unbind(self, key: str, obj: Optional['BaseBinding'] = None):
         """
-        用于被unbind调用, 实现反向解除绑定
+        用于被unbind调用, 实现反向解除绑定（单独使用时会导致仅单向解除绑定）
+        必须指定key, 通常可以使用bindname作为key
         """
         if key not in self.bindings or self.bindings[key] is None:
-            raise Exception('reverse_unbind error') # 不存在绑定
+            raise Exception('reverse_unbind error') # 不存在绑定，反向解除绑定必须存在绑定。若通过unbind调用出现，请检查是否存在单向绑定
         elif hasattr(self.bindings[key], "bindname"):
             self.bindings[key] = None
         elif isinstance(self.bindings[key], list):
